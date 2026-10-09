@@ -2097,7 +2097,7 @@
     </div>
   </div>
 
-  <script src="/nopeit-sn/app.js?v=4"></script>
+  <script src="/nopeit-sn/app.js?v=5"></script>
 
 <script>
 function localChemCard(subject, topic) {
@@ -2130,6 +2130,43 @@ function submitGenCustomCard() {
   var card = localChemCard(subject, topic);
   closeModal();
   openGenericModal(card.title, '<div class="space-y-4"><div class="p-4 bg-slate-950 rounded-xl border border-slate-800"><span class="text-amber-400 font-bold text-xs uppercase block mb-1">Concept Nugget:</span><p>'+card.concept_nugget+'</p><p class="text-amber-300 font-bold mt-2">'+card.key_takeaway+'</p></div><div class="p-4 bg-slate-950 rounded-xl border border-slate-800"><p class="font-medium text-white">'+card.pyq_question+'</p><p class="text-emerald-400 mt-3"><strong>Answer:</strong> '+card.options[card.correct_option_index]+'</p><p class="text-slate-400 text-[11px] mt-1">'+card.explanation+'</p></div></div>');
+}
+</script>
+
+
+<script>
+function submitMaterialForRefinery() {
+  var title = document.getElementById('mat-title-input').value.trim();
+  var subject = document.getElementById('mat-subject-input').value;
+  var rawText = document.getElementById('mat-text-input').value.trim();
+  if (!title) return alert('Please enter a title for the material');
+  var fileNote = (typeof selectedUploadFile !== 'undefined' && selectedUploadFile)
+    ? 'File selected: ' + selectedUploadFile.name + '. This page cannot read a PDF, so the card uses the title. Paste the notes if you want those lines used.'
+    : (rawText ? rawText.slice(0, 500) : 'No pasted text. Card built from the title.');
+  var t = (title + ' ' + subject).toLowerCase();
+  var nugget, check, answer, why;
+  if (t.indexOf('electro') >= 0) {
+    nugget = 'At 298 K, E = E° - (0.059/n) log Q. For CBSE, write the cell reaction, the value of n, and the expression for Q before the number. A missing unit or a missing n loses the step mark.';
+    check = 'Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. Find E at 298 K.';
+    answer = '1.16 V';
+    why = 'n = 2, Q = 0.01. E = 1.10 - (0.059/2) log(0.01) = 1.10 + 0.059 = 1.16 V.';
+  } else {
+    nugget = 'Refinery card for ' + title + '. State the relation, the condition where it fails, and one board trap.';
+    check = 'What must be written before the final value in a CBSE answer on ' + title + '?';
+    answer = 'The relation, the assumption, and the unit.';
+    why = 'A final number alone does not get the step marks.';
+  }
+  var vault = JSON.parse(localStorage.getItem('air1-vault') || '[]');
+  vault.unshift({title: title, subject: subject, nugget: nugget, note: fileNote});
+  localStorage.setItem('air1-vault', JSON.stringify(vault.slice(0, 20)));
+  if (typeof closeModal === 'function') closeModal();
+  if (typeof openGenericModal === 'function') {
+    openGenericModal(title, '<div class="space-y-3"><p class="text-amber-300">' + nugget + '</p><p>' + check + '</p><p class="text-emerald-400">Answer: ' + answer + '</p><p class="text-slate-400">' + why + '</p><p class="text-slate-500">' + fileNote + '</p></div>');
+  } else {
+    alert(nugget + '\n' + check + '\n' + answer);
+  }
+  var btn = document.getElementById('btn-refine-material');
+  if (btn) { btn.disabled = false; btn.innerHTML = 'Ingest & Refine into AIR-1 Vault (+50 XP)'; }
 }
 </script>
 
