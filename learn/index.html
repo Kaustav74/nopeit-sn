@@ -11,7 +11,7 @@
   <script>
     let lessons=[]; let state={};
     const app=document.getElementById('app');
-    async function boot(){ lessons=await (await fetch('lessons.json?v=1')).json(); home(); }
+    async function boot(){ lessons=await (await fetch('lessons.json?v=2')).json(); home(); }
     function home(){
       app.innerHTML=`<p class="text-emerald-400 text-xs uppercase">New SoloLearn</p><h1 class="text-3xl font-bold mt-2">Every chapter. Concept first.</h1><p class="text-slate-400 text-sm mt-2">${lessons.length} concepts from the topics in your notes. The question opens only after the concept.</p><div class="grid gap-3 mt-6">${['Physics','Chemistry','Mathematics'].map(s=>`<button onclick="openSubject('${s}')" class="p-5 rounded-2xl bg-slate-900 border border-slate-700 text-left"><div class="text-amber-300 text-xs">${lessons.filter(l=>l.subject===s).length} concepts</div><div class="text-xl font-bold">${s}</div></button>`).join('')}</div>`;
     }
