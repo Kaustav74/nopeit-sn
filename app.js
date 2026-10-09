@@ -4160,3 +4160,80 @@ function answerSolo(choice) {
   }
 }
 loadSoloLearnTab = async function () { renderSoloSubjects(); };
+
+
+async function readNoteFile(file) {
+  const name = file.name || "note";
+  if (/\.txt$|\.md$|\.csv$/i.test(name)) return await file.text();
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+  const data = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: data}).promise;
+  let text = "";
+  const pages = Math.min(pdf.numPages, 12);
+  for (let p = 1; p <= pages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(" ") + "\n";
+  }
+  return text;
+}
+function noteKey() { return soloState.subject + "|" + soloState.chapter; }
+function savedNotes() {
+  const all = JSON.parse(localStorage.getItem("air1-chapter-notes") || "{}");
+  return all[noteKey()] || "";
+}
+function saveNotes(text) {
+  const all = JSON.parse(localStorage.getItem("air1-chapter-notes") || "{}");
+  all[noteKey()] = text.slice(0, 20000);
+  localStorage.setItem("air1-chapter-notes", JSON.stringify(all));
+}
+function noteTopics(text) {
+  const parts = text.replace(/\s+/g, " ").split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 40).slice(0, 8);
+  return parts.map((sentence, i) => ({
+    name: "From your notes " + (i + 1),
+    concept: sentence,
+    easy: sentence.split(" ").slice(0, 14).join(" ") + ". Keep this line, then answer again.",
+    q: "Which statement matches the note you uploaded?",
+    options: [sentence, "The relation holds with no condition.", "The final number is enough without the unit.", "The assumption can be dropped and the result stays."],
+    answer: 0
+  }));
+}
+topicPack = function(subject, chapter) {
+  const base = (chapter.toLowerCase().indexOf("electrochem") >= 0) ? [
+    {name: "Cell representation", concept: "Write the oxidation half at the left anode and the reduction half at the right cathode.", easy: "Left side loses electrons. Right side gains electrons.", q: "In Zn|Zn2+||Cu2+|Cu, which electrode is the anode?", options: ["Zn", "Cu", "The salt bridge", "Cu2+"], answer: 0},
+    {name: "Nernst equation", concept: "At 298 K, E = E° - (0.059/n) log Q. n is the electrons in the balanced cell reaction.", easy: "A product concentration below the standard state makes log Q negative, so E is larger than E°.", q: "Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. What is E at 298 K?", options: ["1.16 V", "1.04 V", "1.10 V", "0.99 V"], answer: 0}
+  ] : [
+    {name: "Definition", concept: chapter + " starts from the definition and the condition under which the relation holds.", easy: "Name the quantity, then the condition. A formula without its condition is not the concept.", q: "Before using a formula from " + chapter + ", what must be checked?", options: ["The condition under which it was derived", "Only the chapter title", "Only the final unit", "The length of the answer"], answer: 0}
+  ];
+  return base.concat(noteTopics(savedNotes()));
+};
+async function refineChapterNotes(input) {
+  const files = Array.from(input.files || []);
+  const pasted = (document.getElementById("solo-note-paste") || {}).value || "";
+  if (!files.length && !pasted.trim()) return alert("Choose your note files or paste the notes.");
+  const box = document.getElementById("solo-refine-status");
+  if (box) box.textContent = "Reading " + files.length + " file(s)...";
+  let text = pasted.trim();
+  for (const file of files) {
+    try { text += "\n" + await readNoteFile(file); }
+    catch (err) { text += "\n" + file.name + " could not be read. Paste that note if it is a photo."; }
+  }
+  saveNotes(text);
+  if (box) box.textContent = "Refined. Your note lines are now steps on this roadmap.";
+  openSoloChapter(soloState.subject, soloState.grade, soloState.chapter);
+}
+openSoloChapter = function(subject, grade, chapter) {
+  soloState.subject = subject; soloState.grade = grade; soloState.chapter = chapter; soloState.step = 0;
+  const topics = topicPack(subject, chapter);
+  const noteCount = noteTopics(savedNotes()).length;
+  soloBox(`<div class="space-y-3"><button onclick="openSoloSubject('${subject}')" class="text-xs text-slate-400">Back to chapters</button><h3 class="text-white font-bold">${grade} ${subject}: ${chapter}</h3><div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2"><p class="text-sm text-white">Upload notes to refine this chapter</p><p class="text-xs text-slate-400">Add your PDF or text notes. The readable lines become extra steps and checks. A wrong answer still opens the simpler line.</p><input id="solo-note-files" type="file" multiple accept=".pdf,.txt,.md,text/plain" class="text-xs text-slate-300"><textarea id="solo-note-paste" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-xs" rows="3" placeholder="Or paste the notes here"></textarea><button onclick="refineChapterNotes(document.getElementById('solo-note-files'))" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Refine notes into this roadmap</button><p id="solo-refine-status" class="text-xs text-amber-300">${noteCount ? noteCount + " note steps already added." : ""}</p></div><p class="text-xs text-slate-400">Topic roadmap. Do them in order.</p>${topics.map((t,i) => `<button onclick="openSoloTopic(${i})" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-left"><span class="text-emerald-400 text-xs">Step ${i+1}</span><div class="text-white">${t.name}</div></button>`).join("")}</div>`);
+};
