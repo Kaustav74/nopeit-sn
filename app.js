@@ -4292,3 +4292,36 @@ function answerLevel(choice, answer, i) {
     soloBox(`<div class="space-y-3"><p class="text-amber-400 font-bold">Not yet. Simpler line:</p><div class="p-4 rounded-xl border border-amber-500/40 text-sm">${window._soloEasy}</div><button onclick="openLevel(${i})" class="w-full p-3 rounded-xl bg-amber-400 text-slate-950 font-bold">Try the check again</button></div>`);
   }
 }
+
+
+let LESSONS = [];
+async function loadLessons() {
+  if (LESSONS.length) return LESSONS;
+  const res = await fetch("/nopeit-sn/lessons.json?v=11");
+  LESSONS = await res.json();
+  return LESSONS;
+}
+function lessonAt(i) {
+  return LESSONS.filter(l => l.subject===soloState.subject && l.grade===soloState.grade && l.chapter===soloState.chapter)[i];
+}
+openRoadChapter = async function(subject, grade, name) {
+  await loadLessons();
+  soloState.subject = subject; soloState.grade = grade; soloState.chapter = name;
+  const rows = LESSONS.filter(l => l.subject===subject && l.grade===grade && l.chapter===name);
+  soloBox(`<div class="space-y-3"><button onclick="openSoloSubject('${subject}')" class="text-xs text-slate-400">Back</button><p class="text-amber-400 text-xs">${grade} ${subject}</p><h2 class="text-xl font-bold">${name}</h2><p class="text-sm text-slate-400">Three SoloLearn steps. Each one shows the concept, then one question.</p>${rows.map((l,i)=>`<button onclick="openLesson(${i})" class="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left"><div class="h-1.5 rounded bg-slate-800 mb-3"><div class="h-1.5 rounded bg-amber-400" style="width:${((i+1)/3)*100}%"></div></div><div class="text-xs text-amber-300">Step ${i+1} of 3 · ${l.level}</div><div class="text-white mt-1">${l.concept.slice(0,140)}...</div></button>`).join("")}<div class="p-4 rounded-xl border border-slate-800"><p class="text-sm">Upload notes to add more steps</p><input id="solo-note-files" type="file" multiple class="text-xs"><button onclick="refineChapterNotes(document.getElementById('solo-note-files'))" class="mt-2 w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Refine notes</button></div></div>`);
+};
+async function openLesson(i) {
+  await loadLessons();
+  const l = lessonAt(i);
+  soloState.step = i;
+  soloBox(`<div class="space-y-4"><div class="h-1.5 rounded bg-slate-800"><div class="h-1.5 rounded bg-emerald-400" style="width:${((i+1)/3)*100}%"></div></div><button onclick="openRoadChapter('${l.subject}','${l.grade}','${l.chapter.replace(/'/g,"\\'")}')" class="text-xs text-slate-400">Roadmap</button><p class="text-xs text-amber-300">${l.level} · step ${i+1} of 3</p><h2 class="text-lg font-bold">${l.chapter}</h2><div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-sm leading-6">${l.concept}</div><p class="text-white font-semibold">${l.q}</p><div class="space-y-2">${l.options.map((o,k)=>`<button onclick="answerLesson(${i},${k})" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-left">${String.fromCharCode(65+k)}. ${o}</button>`).join("")}</div></div>`);
+}
+function answerLesson(i, choice) {
+  const l = lessonAt(i);
+  if (choice === l.answer) {
+    soloBox(`<div class="space-y-4"><p class="text-emerald-400 text-xl font-bold">Correct</p><p class="text-sm text-slate-300">${l.easy}</p><button onclick="${i<2?`openLesson(${i+1})`:`openRoadChapter('${l.subject}','${l.grade}','${l.chapter.replace(/'/g,"\\'")}')`}" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">${i<2?"Next concept":"Chapter done"}</button></div>`);
+  } else {
+    soloBox(`<div class="space-y-4"><p class="text-rose-400 text-xl font-bold">Not yet</p><p class="text-sm text-slate-200">${l.easy}</p><button onclick="openLesson(${i})" class="w-full p-3 rounded-xl bg-amber-400 text-slate-950 font-bold">Read it again and retry</button></div>`);
+  }
+}
+loadSoloLearnTab = async function(){ await loadLessons(); renderSoloSubjects(); };
