@@ -4091,3 +4091,72 @@ async function exportAcademicDossier() {
     alert('Failed to export dossier: ' + err.message);
   }
 }
+
+const AIR1_ROADMAP = {
+  Physics: {
+    "Class 11": ["Physical World", "Units and Measurements", "Motion in a Straight Line", "Motion in a Plane", "Laws of Motion", "Work, Energy and Power", "System of Particles and Rotational Motion", "Gravitation", "Mechanical Properties of Solids", "Mechanical Properties of Fluids", "Thermal Properties of Matter", "Thermodynamics", "Kinetic Theory", "Oscillations", "Waves"],
+    "Class 12": ["Electric Charges and Fields", "Electrostatic Potential and Capacitance", "Current Electricity", "Moving Charges and Magnetism", "Magnetism and Matter", "Electromagnetic Induction", "Alternating Current", "Electromagnetic Waves", "Ray Optics and Optical Instruments", "Wave Optics", "Dual Nature of Radiation and Matter", "Atoms", "Nuclei", "Semiconductor Electronics"]
+  },
+  Chemistry: {
+    "Class 11": ["Some Basic Concepts of Chemistry", "Structure of Atom", "Classification of Elements and Periodicity", "Chemical Bonding and Molecular Structure", "Thermodynamics", "Equilibrium", "Redox Reactions", "Organic Chemistry: Basic Principles", "Hydrocarbons"],
+    "Class 12": ["Solutions", "Electrochemistry", "Chemical Kinetics", "The d- and f-Block Elements", "Coordination Compounds", "Haloalkanes and Haloarenes", "Alcohols, Phenols and Ethers", "Aldehydes, Ketones and Carboxylic Acids", "Amines", "Biomolecules"]
+  },
+  Mathematics: {
+    "Class 11": ["Sets", "Relations and Functions", "Trigonometric Functions", "Complex Numbers and Quadratic Equations", "Linear Inequalities", "Permutations and Combinations", "Binomial Theorem", "Sequences and Series", "Straight Lines", "Conic Sections", "Limits and Derivatives", "Statistics", "Probability"],
+    "Class 12": ["Relations and Functions", "Inverse Trigonometric Functions", "Matrices", "Determinants", "Continuity and Differentiability", "Applications of Derivatives", "Integrals", "Applications of Integrals", "Differential Equations", "Vector Algebra", "Three Dimensional Geometry", "Linear Programming", "Probability"]
+  }
+};
+function topicPack(subject, chapter) {
+  const c = chapter.toLowerCase();
+  if (c.indexOf("electrochem") >= 0) return [
+    {name: "Cell representation", concept: "Write the oxidation half at the left anode and the reduction half at the right cathode. The salt bridge keeps the solutions electrically neutral.", easy: "Left side loses electrons. Right side gains electrons.", q: "In Zn|Zn2+||Cu2+|Cu, which electrode is the anode?", options: ["Zn", "Cu", "The salt bridge", "Cu2+"], answer: 0},
+    {name: "Nernst equation", concept: "At 298 K, E = E° - (0.059/n) log Q. n is the electrons in the balanced cell reaction, and Q uses the concentrations now.", easy: "If the product concentration is smaller than the standard state, log Q is negative, so E is larger than E°.", q: "Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. What is E at 298 K?", options: ["1.16 V", "1.04 V", "1.10 V", "0.99 V"], answer: 0}
+  ];
+  if (c.indexOf("rotational") >= 0) return [
+    {name: "Torque and angular momentum", concept: "Torque is r cross F. For a rigid body, torque equals I alpha about the same axis.", easy: "A force through the axis gives zero torque because the lever arm is zero.", q: "A force acts through the centre of a wheel. The torque about the centre is", options: ["Zero", "Fr", "I alpha only", "mv"], answer: 0},
+    {name: "Pure rolling", concept: "On a surface at rest, pure rolling means the contact point is instantaneously at rest, so v = R omega.", easy: "If v is larger than R omega, the contact point slips forward.", q: "The no-slip condition on a fixed surface is", options: ["v = R omega", "v = 2 R omega", "omega = 0", "v = 0"], answer: 0}
+  ];
+  if (subject === "Mathematics" && c.indexOf("derivative") >= 0) return [
+    {name: "First derivative", concept: "dy/dx is the slope of the tangent. A positive derivative means the function is increasing at that point.", easy: "Slope up means the value rises as x rises.", q: "If f'(x) > 0 on an interval, f is", options: ["Increasing there", "Always constant", "Always concave", "Undefined"], answer: 0}
+  ];
+  return [
+    {name: "Definition", concept: chapter + " starts from the definition and the quantity it constrains. Write the symbol, the unit, and the condition under which the relation holds.", easy: "Name the quantity first, then the condition. A formula without its condition is not the concept.", q: "Before using a formula from " + chapter + ", what must be checked?", options: ["The condition under which it was derived", "Only the chapter title", "Only the final unit", "The length of the answer"], answer: 0},
+    {name: "Trap", concept: "The usual trap in " + chapter + " is using the standard result after the assumption has been dropped.", easy: "If the assumption is gone, the standard result is gone with it.", q: "A standard result fails when", options: ["Its assumption is dropped", "The chapter name matches", "The unit is written", "The answer is boxed"], answer: 0}
+  ];
+}
+const soloState = {subject: null, grade: null, chapter: null, step: 0, wrong: false};
+function soloBox(html) {
+  const box = document.getElementById("sololearn-modules-list");
+  if (!box) return;
+  box.innerHTML = html;
+}
+function renderSoloSubjects() {
+  soloState.subject = null;
+  soloBox(`<div class="space-y-3"><h3 class="text-white font-bold">Choose a subject</h3><p class="text-xs text-slate-400">Class 11 and 12 chapters, then the topic roadmap. A wrong answer opens a simpler explanation.</p><div class="grid grid-cols-1 gap-3">${["Physics","Chemistry","Mathematics"].map(s => `<button onclick="openSoloSubject('${s}')" class="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-left"><span class="text-amber-400 text-xs">${s}</span><div class="text-white font-bold">${s} tab</div></button>`).join("")}</div></div>`);
+}
+function openSoloSubject(subject) {
+  soloState.subject = subject;
+  const grades = AIR1_ROADMAP[subject];
+  soloBox(`<div class="space-y-4"><button onclick="renderSoloSubjects()" class="text-xs text-slate-400">Back to subjects</button><h3 class="text-white font-bold">${subject}</h3>${Object.keys(grades).map(g => `<div><h4 class="text-amber-400 text-sm mb-2">${g}</h4><div class="grid grid-cols-1 gap-2">${grades[g].map(ch => `<button onclick="openSoloChapter('${subject}','${g}','${ch.replace(/'/g,"\\'")}')" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-left text-sm text-white">${ch}</button>`).join("")}</div></div>`).join("")}</div>`);
+}
+function openSoloChapter(subject, grade, chapter) {
+  soloState.subject = subject; soloState.grade = grade; soloState.chapter = chapter; soloState.step = 0; soloState.wrong = false;
+  const topics = topicPack(subject, chapter);
+  soloBox(`<div class="space-y-3"><button onclick="openSoloSubject('${subject}')" class="text-xs text-slate-400">Back to chapters</button><h3 class="text-white font-bold">${grade} ${subject}: ${chapter}</h3><p class="text-xs text-slate-400">Topic roadmap. Do them in order.</p>${topics.map((t,i) => `<button onclick="openSoloTopic(${i})" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-left"><span class="text-emerald-400 text-xs">Step ${i+1}</span><div class="text-white">${t.name}</div></button>`).join("")}</div>`);
+}
+function openSoloTopic(index) {
+  soloState.step = index; soloState.wrong = false;
+  const t = topicPack(soloState.subject, soloState.chapter)[index];
+  soloBox(`<div class="space-y-3"><button onclick="openSoloChapter('${soloState.subject}','${soloState.grade}','${soloState.chapter.replace(/'/g,"\\'")}')" class="text-xs text-slate-400">Back to roadmap</button><p class="text-amber-400 text-xs">${soloState.grade} ${soloState.subject} · ${soloState.chapter} · Step ${index+1}</p><h3 class="text-white font-bold">${t.name}</h3><div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200">${t.concept}</div><p class="text-xs text-slate-400">Check</p><p class="text-white">${t.q}</p>${t.options.map((o,i) => `<button onclick="answerSolo(${i})" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-left text-sm">${String.fromCharCode(65+i)}. ${o}</button>`).join("")}</div>`);
+}
+function answerSolo(choice) {
+  const topics = topicPack(soloState.subject, soloState.chapter);
+  const t = topics[soloState.step];
+  if (choice === t.answer) {
+    const next = soloState.step + 1 < topics.length;
+    soloBox(`<div class="space-y-3"><p class="text-emerald-400 font-bold">Correct. The concept held.</p><p class="text-slate-300 text-sm">${t.concept}</p>${next ? `<button onclick="openSoloTopic(${soloState.step+1})" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Next topic</button>` : `<button onclick="openSoloChapter('${soloState.subject}','${soloState.grade}','${soloState.chapter.replace(/'/g,"\\'")}')" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Chapter roadmap</button>`}</div>`);
+  } else {
+    soloBox(`<div class="space-y-3"><p class="text-amber-400 font-bold">Not yet. Simpler version:</p><div class="p-4 rounded-xl bg-slate-950 border border-amber-500/40 text-sm text-slate-200">${t.easy}</div><p class="text-slate-400 text-xs">The same check, after the simpler line.</p><button onclick="openSoloTopic(${soloState.step})" class="w-full p-3 rounded-xl bg-amber-400 text-slate-950 font-bold">Try the check again</button></div>`);
+  }
+}
+loadSoloLearnTab = async function () { renderSoloSubjects(); };
