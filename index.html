@@ -2097,6 +2097,41 @@
     </div>
   </div>
 
-  <script src="/nopeit-sn/app.js"></script>
+  <script src="/nopeit-sn/app.js?v=4"></script>
+
+<script>
+function localChemCard(subject, topic) {
+  var t = (topic || '').toLowerCase();
+  if (t.indexOf('electro') >= 0 || t.indexOf('nernst') >= 0 || t.indexOf('cell') >= 0) {
+    return {
+      title: 'Nernst equation',
+      concept_nugget: 'At 298 K, E = E° - (0.059/n) log Q. Q has the same form as K, using the concentrations in the cell now. Trap: n is the electrons in the balanced cell reaction.',
+      key_takeaway: 'As the cell runs, Q rises and E falls. At equilibrium E = 0 and Q = K.',
+      pyq_question: 'Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. Find E at 298 K.',
+      options: ['1.16 V', '1.04 V', '1.10 V', '0.99 V'],
+      correct_option_index: 0,
+      explanation: 'n = 2 and Q = 0.01. E = 1.10 - (0.059/2) log(0.01) = 1.10 + 0.059 = 1.16 V. This is a worked check, not a claimed past-paper question.'
+    };
+  }
+  return {
+    title: subject + ': ' + topic,
+    concept_nugget: 'The Python generator is not on this page. State the relation, the condition where it fails, and one trap.',
+    key_takeaway: 'Answer the check before you treat the card as done.',
+    pyq_question: 'Which change makes the standard result for ' + topic + ' fail?',
+    options: ['The assumption in the derivation is dropped', 'The formula is memorised', 'The unit is SI', 'The chapter name matches'],
+    correct_option_index: 0,
+    explanation: 'Use this check. Do not wait on the missing /api call.'
+  };
+}
+function submitGenCustomCard() {
+  var subject = document.getElementById('m-gen-subject').value;
+  var topic = document.getElementById('m-gen-topic').value.trim();
+  if (!topic) return alert('Please enter a topic');
+  var card = localChemCard(subject, topic);
+  closeModal();
+  openGenericModal(card.title, '<div class="space-y-4"><div class="p-4 bg-slate-950 rounded-xl border border-slate-800"><span class="text-amber-400 font-bold text-xs uppercase block mb-1">Concept Nugget:</span><p>'+card.concept_nugget+'</p><p class="text-amber-300 font-bold mt-2">'+card.key_takeaway+'</p></div><div class="p-4 bg-slate-950 rounded-xl border border-slate-800"><p class="font-medium text-white">'+card.pyq_question+'</p><p class="text-emerald-400 mt-3"><strong>Answer:</strong> '+card.options[card.correct_option_index]+'</p><p class="text-slate-400 text-[11px] mt-1">'+card.explanation+'</p></div></div>');
+}
+</script>
+
 </body>
 </html>
