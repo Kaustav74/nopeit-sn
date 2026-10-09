@@ -11,7 +11,7 @@
   <main class="max-w-2xl mx-auto px-4 py-8 space-y-5">
     <p class="text-emerald-400 text-xs uppercase tracking-widest">FreeLLMAPI</p>
     <h1 class="text-3xl font-bold">Upload notes and questions</h1>
-    <p class="text-slate-400 text-sm">The page extracts the text in your browser, then asks your FreeLLMAPI for simpler personalised notes. The key stays in this browser.</p>
+    <p class="text-slate-400 text-sm">Upload the notes PDF and the questions PDF. The page reads them here and asks FreeLLMAPI for simpler notes.</p>
     <label class="block text-sm">Notes PDF
       <input id="notes" type="file" accept="application/pdf" class="mt-1 w-full text-sm">
     </label>
@@ -73,7 +73,7 @@
         out.classList.remove("hidden");
         status.textContent = "Done. The key was not saved on the server.";
       } catch (err) {
-        status.textContent = "Could not finish: " + err.message + ". FreeLLMAPI must be running, and the page origin must be allowed by its CORS setting.";
+        status.textContent = "Could not finish: " + err.message + ". The FreeLLMAPI server must allow https://kaustav74.github.io. On Render, set DASHBOARD_ORIGINS=https://kaustav74.github.io and restart.";
       }
     };
   </script>
