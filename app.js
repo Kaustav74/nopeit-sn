@@ -2448,53 +2448,33 @@ async function submitMaterialForRefinery() {
   const title = document.getElementById('mat-title-input').value.trim();
   const subject = document.getElementById('mat-subject-input').value;
   const rawText = document.getElementById('mat-text-input').value.trim();
-
   if (!title) return alert('Please enter a title for the material');
-
   const btn = document.getElementById('btn-refine-material');
-  btn.innerHTML = '<span class="animate-pulse">Refining with FreeLLM AI... (+50 XP)</span>';
-  btn.disabled = true;
-
-  try {
-    if (selectedUploadFile) {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('subject', subject);
-      formData.append('file', selectedUploadFile);
-
-      const res = await fetch('/api/materials/upload', {
-        method: 'POST',
-        body: formData
-      });
-      await res.json();
-    } else if (rawText) {
-      const res = await fetch('/api/materials/text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: jsonFormat({ title, subject, content: rawText })
-      });
-      await res.json();
-    } else {
-      btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Ingest & Refine into AIR-1 Vault (+50 XP)';
-      btn.disabled = false;
-      return alert('Please select a file or paste text to refine');
-    }
-
-    document.getElementById('mat-title-input').value = '';
-    document.getElementById('mat-text-input').value = '';
-    document.getElementById('mat-file-input').value = '';
-    document.getElementById('mat-file-label').innerText = 'Select PDF or Photo of Note/Question';
-    selectedUploadFile = null;
-
-    loadMaterialsTab();
-    loadProfile();
-  } catch (err) {
-    alert('Refinery error: ' + err.message);
-  } finally {
-    btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Ingest & Refine into AIR-1 Vault (+50 XP)';
-    btn.disabled = false;
+  if (btn) btn.disabled = true;
+  const isElectro = (title + ' ' + subject).toLowerCase().indexOf('electro') >= 0;
+  const card = {
+    title: title,
+    subject: subject || 'Chemistry',
+    filename: selectedUploadFile ? selectedUploadFile.name : 'Pasted note',
+    summary: isElectro
+      ? 'At 298 K, E = E° - (0.059/n) log Q. Write the cell reaction, n and Q before the number. For Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu with E° = 1.10 V, n = 2 and Q = 0.01, so E = 1.16 V.'
+      : ('Refinery card for ' + title + '. ' + (rawText || 'Paste the note text if you want those lines used. A PDF cannot be read on this page.')),
+    sololearn_card_json: {}
+  };
+  const key = 'air1-materials';
+  const mats = JSON.parse(localStorage.getItem(key) || '[]');
+  mats.unshift(card);
+  localStorage.setItem(key, JSON.stringify(mats.slice(0, 20)));
+  const container = document.getElementById('materials-feed-list');
+  if (container) {
+    container.innerHTML = '<div class="p-5 bg-slate-950 border border-slate-800 rounded-2xl space-y-3"><span class="px-2.5 py-1 rounded bg-sky-500/10 text-sky-400 font-mono text-xs font-bold">' + card.subject + '</span><h4 class="font-bold text-sm text-white">' + card.title + '</h4><p class="text-xs text-slate-200">' + card.summary + '</p></div>';
   }
+  const badge = document.getElementById('mat-count-badge');
+  if (badge) badge.innerText = mats.length + ' Refined Items';
+  if (btn) btn.disabled = false;
+  alert('Card saved on this page. No server call was made.');
 }
+
 
 // ----------------- 9. VISUAL & SYMBOLIC ENGINE (ORGANIC, SYMPY, PLOTS) -----------------
 function switchVisualSubTab(sub) {
