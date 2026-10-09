@@ -1,3 +1,9 @@
+# Download the Android app
+
+[Download JEE_AIR1_full.apk](https://github.com/Kaustav74/nopeit-sn/releases/download/apk-full/JEE_AIR1_full.apk)
+
+Release page: https://github.com/Kaustav74/nopeit-sn/releases/tag/apk-full
+
 # 🏆 JEE Advanced AIR-1 & CBSE 95%+ Master Platform
 
 An AI-powered preparation platform engineered for students targeting **All India Rank 1 (AIR-1)** in JEE Main & JEE Advanced while securing **95%+ in the CBSE Class 12 Board Examinations**.
