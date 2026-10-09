@@ -4237,3 +4237,58 @@ openSoloChapter = function(subject, grade, chapter) {
   const noteCount = noteTopics(savedNotes()).length;
   soloBox(`<div class="space-y-3"><button onclick="openSoloSubject('${subject}')" class="text-xs text-slate-400">Back to chapters</button><h3 class="text-white font-bold">${grade} ${subject}: ${chapter}</h3><div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2"><p class="text-sm text-white">Upload notes to refine this chapter</p><p class="text-xs text-slate-400">Add your PDF or text notes. The readable lines become extra steps and checks. A wrong answer still opens the simpler line.</p><input id="solo-note-files" type="file" multiple accept=".pdf,.txt,.md,text/plain" class="text-xs text-slate-300"><textarea id="solo-note-paste" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-xs" rows="3" placeholder="Or paste the notes here"></textarea><button onclick="refineChapterNotes(document.getElementById('solo-note-files'))" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Refine notes into this roadmap</button><p id="solo-refine-status" class="text-xs text-amber-300">${noteCount ? noteCount + " note steps already added." : ""}</p></div><p class="text-xs text-slate-400">Topic roadmap. Do them in order.</p>${topics.map((t,i) => `<button onclick="openSoloTopic(${i})" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-left"><span class="text-emerald-400 text-xs">Step ${i+1}</span><div class="text-white">${t.name}</div></button>`).join("")}</div>`);
 };
+
+
+let ROADMAP = [];
+async function loadRoadmap() {
+  if (ROADMAP.length) return ROADMAP;
+  const res = await fetch("/nopeit-sn/roadmap.json?v=10");
+  ROADMAP = await res.json();
+  return ROADMAP;
+}
+function soloLevels(ch) {
+  return [
+    {tag: "CBSE", text: ch.cbse || "Board definition and the condition."},
+    {tag: "JEE Main", text: ch.main || "The extra calculation the board stops before."},
+    {tag: "JEE Advanced", text: ch.advanced || "The deeper case. Passing Main does not cover this."}
+  ];
+}
+loadSoloLearnTab = async function () {
+  await loadRoadmap();
+  soloState.subject = null;
+  renderSoloSubjects();
+};
+renderSoloSubjects = function () {
+  soloBox(`<div class="space-y-4"><p class="text-xs uppercase tracking-widest text-amber-400">SoloLearn</p><h2 class="text-2xl font-bold text-white">Choose the subject</h2><p class="text-sm text-slate-400">Class 11 and 12, then the chapter. Each chapter has the board line, the Main extra, and the Advanced extra. A wrong check opens the simpler line.</p><div class="grid grid-cols-1 gap-3">${["Physics","Chemistry","Mathematics"].map(s => `<button onclick="openSoloSubject('${s}')" class="p-5 rounded-2xl bg-slate-900 border border-slate-700 text-left"><div class="text-amber-400 text-xs">${ROADMAP.filter(c => c.subject===s).length} chapters</div><div class="text-xl font-bold text-white">${s}</div></button>`).join("")}</div></div>`);
+};
+openSoloSubject = async function (subject) {
+  await loadRoadmap();
+  soloState.subject = subject;
+  const grades = ["Class 11", "Class 12"];
+  soloBox(`<div class="space-y-5"><button onclick="renderSoloSubjects()" class="text-xs text-slate-400">Subjects</button><h2 class="text-xl font-bold text-white">${subject}</h2>${grades.map(g => `<section><h3 class="text-amber-400 mb-2">${g}</h3><div class="grid grid-cols-1 gap-2">${ROADMAP.filter(c => c.subject===subject && c.grade===g).map(c => `<button onclick="openRoadChapter('${c.subject}','${c.grade}','${c.name.replace(/'/g,"\\'")}')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-left"><div class="text-white font-semibold">${c.name}</div><div class="mt-2 flex gap-2 text-[11px]"><span class="px-2 py-0.5 rounded bg-sky-500/10 text-sky-300">CBSE</span><span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300">Main</span><span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300">Advanced</span></div></button>`).join("")}</div></section>`).join("")}</div>`);
+};
+openRoadChapter = async function (subject, grade, name) {
+  await loadRoadmap();
+  soloState.subject = subject; soloState.grade = grade; soloState.chapter = name; soloState.step = 0;
+  const ch = ROADMAP.find(c => c.subject===subject && c.grade===grade && c.name===name) || {name, cbse:"", main:"", advanced:""};
+  const levels = soloLevels(ch);
+  soloBox(`<div class="space-y-3"><button onclick="openSoloSubject('${subject}')" class="text-xs text-slate-400">Back to ${subject}</button><p class="text-amber-400 text-xs">${grade} ${subject}</p><h2 class="text-xl font-bold text-white">${name}</h2><div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2"><p class="text-sm text-white">Upload notes to refine this chapter</p><input id="solo-note-files" type="file" multiple accept=".pdf,.txt,.md" class="text-xs"><textarea id="solo-note-paste" rows="3" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-xs" placeholder="Paste notes if a file is a photo"></textarea><button onclick="refineChapterNotes(document.getElementById('solo-note-files'))" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">Refine notes into this roadmap</button><p id="solo-refine-status" class="text-xs text-amber-300"></p></div>${levels.map((lv,i) => `<button onclick="openLevel(${i})" class="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-left"><span class="text-xs text-amber-300">Step ${i+1} · ${lv.tag}</span><div class="text-sm text-slate-200 mt-1">${lv.text.slice(0,180)}...</div></button>`).join("")}</div>`);
+};
+openSoloChapter = openRoadChapter;
+function openLevel(i) {
+  const ch = ROADMAP.find(c => c.subject===soloState.subject && c.grade===soloState.grade && c.name===soloState.chapter);
+  const lv = soloLevels(ch)[i];
+  soloState.step = i;
+  const q = i === 1 && /electrochem/i.test(ch.name)
+    ? {q: "Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. What is E at 298 K?", options: ["1.16 V", "1.04 V", "1.10 V", "0.99 V"], answer: 0, easy: "Q = 0.01 and n = 2, so the log term adds 0.059 V."}
+    : {q: "This " + lv.tag + " step is done only if you can state:", options: ["The limit of this level and what it does not cover", "The chapter title only", "A final number without the condition", "That Main and Advanced are the same"], answer: 0, easy: lv.tag + " means: " + lv.text.split(".").slice(0,1)};
+  soloBox(`<div class="space-y-3"><button onclick="openRoadChapter('${soloState.subject}','${soloState.grade}','${ch.name.replace(/'/g,"\\'")}')" class="text-xs text-slate-400">Roadmap</button><p class="text-amber-400 text-xs">${lv.tag}</p><h3 class="text-white font-bold">${ch.name}</h3><div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200">${lv.text}</div><p class="text-white">${q.q}</p>${q.options.map((o,k) => `<button onclick="answerLevel(${k},${q.answer},${i})" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-left text-sm">${String.fromCharCode(65+k)}. ${o}</button>`).join("")}</div>`);
+  window._soloEasy = q.easy;
+}
+function answerLevel(choice, answer, i) {
+  if (choice === answer) {
+    soloBox(`<div class="space-y-3"><p class="text-emerald-400 font-bold">Correct for this level.</p><button onclick="openLevel(${Math.min(i+1,2)})" class="w-full p-3 rounded-xl bg-emerald-500 text-slate-950 font-bold">${i<2?"Next level":"Back to roadmap"}</button></div>`);
+  } else {
+    soloBox(`<div class="space-y-3"><p class="text-amber-400 font-bold">Not yet. Simpler line:</p><div class="p-4 rounded-xl border border-amber-500/40 text-sm">${window._soloEasy}</div><button onclick="openLevel(${i})" class="w-full p-3 rounded-xl bg-amber-400 text-slate-950 font-bold">Try the check again</button></div>`);
+  }
+}
