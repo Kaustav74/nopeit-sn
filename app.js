@@ -4343,3 +4343,17 @@ async function openLesson(i) {
   const safe = l.chapter.replace(/'/g, "\\'");
   soloBox(`<div class="space-y-4"><div class="h-2 rounded-full bg-slate-800"><div class="h-2 rounded-full bg-emerald-400" style="width:${((i+1)/3)*100}%"></div></div><div class="flex justify-between text-xs text-slate-400"><button onclick="openSoloSubject('${l.subject}')">Back</button><span>${l.level} · ${i+1}/3</span></div><p class="text-emerald-400 text-xs font-bold uppercase">Concept</p><h2 class="text-xl font-bold text-white">${l.chapter}</h2><div class="p-4 rounded-2xl bg-slate-950 border border-emerald-500/40 text-base leading-7 text-slate-100">${l.concept}</div><p class="text-amber-300 text-xs font-bold uppercase">Question</p><p class="text-white text-base font-semibold">${l.q}</p><div class="space-y-2">${l.options.map((o,k)=>`<button onclick="answerLesson(${i},${k})" class="w-full p-4 rounded-2xl bg-slate-900 border border-slate-600 text-left text-sm">${String.fromCharCode(65+k)}. ${o}</button>`).join("")}</div></div>`);
 }
+
+
+async function openLesson(i) {
+  await loadLessons();
+  const l = lessonAt(i);
+  if (!l) return soloBox('<p class="text-rose-400">Lesson missing. Reload the page.</p>');
+  soloState.step = i;
+  soloState.phase = 'concept';
+  soloBox(`<div class="space-y-4"><div class="h-2 rounded-full bg-slate-800"><div class="h-2 rounded-full bg-emerald-400" style="width:${((i)/3)*100}%"></div></div><p class="text-emerald-400 text-xs font-bold uppercase">Concept ${i+1} of 3 · ${l.level}</p><h2 class="text-2xl font-bold text-white">${l.chapter}</h2><div class="p-5 rounded-2xl bg-slate-950 border border-emerald-500/40 text-base leading-7 text-slate-100">${l.concept}</div><button onclick="showQuestion(${i})" class="w-full p-4 rounded-2xl bg-emerald-500 text-slate-950 font-bold">I read the concept. Ask me.</button></div>`);
+}
+function showQuestion(i) {
+  const l = lessonAt(i);
+  soloBox(`<div class="space-y-4"><div class="h-2 rounded-full bg-slate-800"><div class="h-2 rounded-full bg-amber-400" style="width:${((i+0.5)/3)*100}%"></div></div><button onclick="openLesson(${i})" class="text-xs text-slate-400">Back to concept</button><p class="text-amber-300 text-xs font-bold uppercase">Question · ${l.level}</p><h2 class="text-xl font-bold">${l.chapter}</h2><p class="text-white text-base">${l.q}</p><div class="space-y-2">${l.options.map((o,k)=>`<button onclick="answerLesson(${i},${k})" class="w-full p-4 rounded-2xl bg-slate-900 border border-slate-600 text-left">${String.fromCharCode(65+k)}. ${o}</button>`).join("")}</div></div>`);
+}
