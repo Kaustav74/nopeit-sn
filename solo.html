@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIR-1 SoloLearn</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#070b14] text-slate-100 min-h-screen">
+  <main id="app" class="max-w-xl mx-auto px-4 py-6"></main>
+  <script>
+    let lessons = [];
+    let state = {subject:null, grade:null, chapter:null, step:0};
+    const app = document.getElementById('app');
+    async function boot() {
+      lessons = await (await fetch('lessons.json?v=14')).json();
+      home();
+    }
+    function home() {
+      app.innerHTML = `<p class="text-emerald-400 text-xs uppercase tracking-widest">SoloLearn</p>
+        <h1 class="text-3xl font-bold mt-2">Concept first</h1>
+        <p class="text-slate-400 mt-2 text-sm">Read the concept. Then open the question. A wrong answer stays on the step.</p>
+        <div class="grid gap-3 mt-6">${['Physics','Chemistry','Mathematics'].map(s => `<button onclick="openSubject('${s}')" class="p-5 rounded-2xl bg-slate-900 border border-slate-700 text-left"><div class="text-amber-300 text-xs">${lessons.filter(l=>l.subject===s).length} concepts</div><div class="text-xl font-bold">${s}</div></button>`).join('')}</div>`;
+    }
+    function openSubject(subject) {
+      state.subject = subject;
+      app.innerHTML = `<button onclick="home()" class="text-xs text-slate-400">Subjects</button><h2 class="text-2xl font-bold mt-2">${subject}</h2>
+        ${['Class 11','Class 12'].map(g => `<h3 class="text-amber-400 mt-5">${g}</h3><div class="grid gap-2 mt-2">${lessons.filter(l=>l.subject===subject&&l.grade===g).map(l=>`<button onclick="openConcept('${subject}','${g}','${l.chapter.replace(/'/g,"\\'")}')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-left">${l.chapter}</button>`).join('')}</div>`).join('')}`;
+    }
+    function chapterLessons() {
+      return lessons.filter(l => l.subject===state.subject && l.grade===state.grade && l.chapter===state.chapter);
+    }
+    function openConcept(subject, grade, chapter) {
+      state = {subject, grade, chapter, step:0};
+      showConcept();
+    }
+    function showConcept() {
+      const rows = chapterLessons();
+      const l = rows[state.step];
+      app.innerHTML = `<div class="h-2 rounded-full bg-slate-800"><div class="h-2 rounded-full bg-emerald-400" style="width:${(state.step/rows.length)*100}%"></div></div>
+        <button onclick="openSubject('${l.subject}')" class="text-xs text-slate-400 mt-4">Chapters</button>
+        <p class="text-emerald-400 text-xs font-bold uppercase mt-3">Concept · ${l.grade} ${l.subject}</p>
+        <h2 class="text-2xl font-bold mt-1">${l.chapter}</h2>
+        <div class="p-5 mt-4 rounded-2xl bg-slate-950 border border-emerald-500/40 text-base leading-7">${l.concept}</div>
+        <button onclick="showQuestion()" class="w-full mt-4 p-4 rounded-2xl bg-emerald-500 text-slate-950 font-bold">I read the concept. Ask me.</button>`;
+    }
+    function showQuestion() {
+      const l = chapterLessons()[state.step];
+      app.innerHTML = `<button onclick="showConcept()" class="text-xs text-slate-400">Back to concept</button>
+        <p class="text-amber-300 text-xs font-bold uppercase mt-3">Question</p>
+        <h2 class="text-xl font-bold mt-1">${l.chapter}</h2>
+        <p class="mt-4 text-base">${l.q}</p>
+        <div class="grid gap-2 mt-4">${l.options.map((o,i)=>`<button onclick="answer(${i})" class="p-4 rounded-2xl bg-slate-900 border border-slate-600 text-left">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div>`;
+    }
+    function answer(choice) {
+      const rows = chapterLessons();
+      const l = rows[state.step];
+      if (choice === l.answer) {
+        const next = state.step + 1 < rows.length;
+        app.innerHTML = `<p class="text-emerald-400 text-2xl font-bold">Correct</p><p class="mt-3 text-slate-300">${l.easy}</p>
+          <button onclick="${next?'state.step++;showConcept()':'openSubject(\\''+l.subject+'\\')'}" class="w-full mt-4 p-4 rounded-2xl bg-emerald-500 text-slate-950 font-bold">${next?'Next concept':'Back to chapters'}</button>`;
+      } else {
+        app.innerHTML = `<p class="text-rose-400 text-2xl font-bold">Not yet</p><p class="mt-3 text-slate-200">${l.easy}</p>
+          <button onclick="showConcept()" class="w-full mt-4 p-4 rounded-2xl bg-amber-400 text-slate-950 font-bold">Read the concept again</button>`;
+      }
+    }
+    boot();
+  </script>
+</body>
+</html>
