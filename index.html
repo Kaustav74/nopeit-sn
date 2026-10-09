@@ -49,6 +49,69 @@
   <link rel="stylesheet" href="/nopeit-sn/style.css">
 </head>
 <body class="bg-[#070b14] text-slate-100 min-h-screen font-sans antialiased selection:bg-amber-500 selection:text-black">
+<script>
+(function () {
+  var realFetch = window.fetch;
+  function storeGet(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+    catch (e) { return fallback; }
+  }
+  function storeSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+  function electroCard(title) {
+    return {
+      title: title || "Nernst equation",
+      subject: "Chemistry",
+      filename: "On-page card",
+      summary: "At 298 K, E = E° - (0.059/n) log Q. Write the cell reaction, n, and Q before the number.",
+      sololearn_card_json: {
+        title: "Nernst equation",
+        concept_nugget: "At 298 K, E = E° - (0.059/n) log Q. n is the electrons in the balanced cell reaction.",
+        key_takeaway: "As the cell runs, Q rises and E falls. At equilibrium E = 0 and Q = K.",
+        pyq_question: "Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. Find E at 298 K.",
+        options: ["1.16 V", "1.04 V", "1.10 V", "0.99 V"],
+        correct_option_index: 0,
+        explanation: "n = 2 and Q = 0.01. E = 1.10 + 0.059 = 1.16 V. Worked check, not a claimed past paper."
+      }
+    };
+  }
+  window.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    if (url.indexOf("/api/") === -1) return realFetch.apply(this, arguments);
+    var path = url.split("?")[0];
+    var method = ((init && init.method) || "GET").toUpperCase();
+    var payload = {ok: true, status: "local", message: "Saved on this page. No Python server on GitHub Pages."};
+    if (path.indexOf("/api/profile") === 0) {
+      payload = storeGet("air1-profile", {has_profile: true, name: "Brother", streak_days: 1, xp: 50, mental_fortitude_rating: 8, target: "JEE AIR 1", board: "CBSE"});
+    } else if (path.indexOf("/api/diagnostic/questions") === 0) {
+      payload = [
+        {id: "e1", subject: "Chemistry", topic: "Electrochemistry", question: "For Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu, E° = 1.10 V. What is E at 298 K?", options: ["1.16 V", "1.04 V", "1.10 V", "0.99 V"], correct_option_index: 0},
+        {id: "p1", subject: "Physics", topic: "Rotational Mechanics", question: "Pure rolling on a surface at rest requires which relation?", options: ["v = Rω", "v = 2Rω", "v = Rω/2", "v = 0"], correct_option_index: 0}
+      ];
+    } else if (path.indexOf("/api/diagnostic") === 0) {
+      payload = {has_diagnostic: false, total_score: 0, max_score: 2, weak_topics: ["Electrochemistry"]};
+    } else if (path.indexOf("/api/materials") === 0) {
+      var mats = storeGet("air1-materials", []);
+      if (method !== "GET") {
+        mats.unshift(electroCard("CBSE Electrochemistry Notes"));
+        storeSet("air1-materials", mats.slice(0, 20));
+        payload = {ok: true};
+      } else payload = mats;
+    } else if (path.indexOf("/api/sololearn/generate") === 0) {
+      payload = electroCard("Electrochemistry").sololearn_card_json;
+    } else if (path.indexOf("/api/sololearn") === 0) {
+      payload = [electroCard("Electrochemistry")];
+    } else if (path.indexOf("/api/daily-goals") === 0) {
+      payload = [{id: "g1", title: "Electrochemistry Nernst check", subject: "Chemistry", done: false}];
+    } else if (path.indexOf("/api/mentor") === 0) {
+      payload = method === "GET" ? [] : {reply: "For the Nernst equation, write n and Q before the number. For pure rolling, check that the contact point is at rest."};
+    } else if (method === "GET") {
+      payload = [];
+    }
+    return Promise.resolve(new Response(JSON.stringify(payload), {status: 200, headers: {"Content-Type": "application/json"}}));
+  };
+})();
+</script>
+
 
   <!-- Top Global Bar -->
   <header class="border-b border-slate-800 bg-[#0b1120]/80 backdrop-blur sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
