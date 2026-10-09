@@ -12,12 +12,6 @@
     <p class="text-emerald-400 text-xs uppercase tracking-widest">FreeLLMAPI</p>
     <h1 class="text-3xl font-bold">Upload notes and questions</h1>
     <p class="text-slate-400 text-sm">The page extracts the text in your browser, then asks your FreeLLMAPI for simpler personalised notes. The key stays in this browser.</p>
-    <label class="block text-sm">FreeLLMAPI base URL
-      <input id="base" value="https://my-freellmapi-server.onrender.com/v1" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
-    </label>
-    <label class="block text-sm">FreeLLMAPI key
-      <input id="key" type="password" value="freellmapi-aee0bcf8947be1ae92447fee0175f33e3277b275372f2931" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
-    </label>
     <label class="block text-sm">Notes PDF
       <input id="notes" type="file" accept="application/pdf" class="mt-1 w-full text-sm">
     </label>
@@ -45,11 +39,11 @@
       return text.slice(0, 12000);
     }
     document.getElementById("go").onclick = async () => {
-      const base = document.getElementById("base").value.replace(/\/$/, "");
-      const key = document.getElementById("key").value.trim();
+      const base = "https://my-freellmapi-server.onrender.com/v1";
+      const key = "freellmapi-aee0bcf8947be1ae92447fee0175f33e3277b275372f2931";
       const notes = document.getElementById("notes").files[0];
       const questions = document.getElementById("questions").files[0];
-      if (!key || !notes) { status.textContent = "Add the FreeLLMAPI key and a notes PDF."; return; }
+      if (!notes) { status.textContent = "Add a notes PDF."; return; }
       status.textContent = "Reading the PDFs...";
       out.classList.add("hidden");
       try {
