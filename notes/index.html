@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Easy notes from your PDFs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body class="bg-[#070b14] text-slate-100 min-h-screen">
+  <main class="max-w-2xl mx-auto px-4 py-8 space-y-5">
+    <p class="text-emerald-400 text-xs uppercase tracking-widest">FreeLLMAPI</p>
+    <h1 class="text-3xl font-bold">Upload notes and questions</h1>
+    <p class="text-slate-400 text-sm">The page extracts the text in your browser, then asks your FreeLLMAPI for simpler personalised notes. The key stays in this browser.</p>
+    <label class="block text-sm">FreeLLMAPI base URL
+      <input id="base" value="http://localhost:3001/v1" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
+    </label>
+    <label class="block text-sm">FreeLLMAPI key
+      <input id="key" type="password" placeholder="freellmapi-..." class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
+    </label>
+    <label class="block text-sm">Notes PDF
+      <input id="notes" type="file" accept="application/pdf" class="mt-1 w-full text-sm">
+    </label>
+    <label class="block text-sm">Questions PDF
+      <input id="questions" type="file" accept="application/pdf" class="mt-1 w-full text-sm">
+    </label>
+    <button id="go" class="w-full p-4 rounded-2xl bg-emerald-500 text-slate-950 font-bold">Make easy notes</button>
+    <p id="status" class="text-sm text-slate-400"></p>
+    <article id="out" class="hidden p-5 rounded-2xl bg-slate-950 border border-emerald-500/40 whitespace-pre-wrap leading-7"></article>
+  </main>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const status = document.getElementById("status");
+    const out = document.getElementById("out");
+    async function pdfText(file, limit = 12) {
+      const data = new Uint8Array(await file.arrayBuffer());
+      const pdf = await pdfjsLib.getDocument({data}).promise;
+      let text = "";
+      const pages = Math.min(pdf.numPages, limit);
+      for (let i = 1; i <= pages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(" ") + "\n";
+      }
+      return text.slice(0, 12000);
+    }
+    document.getElementById("go").onclick = async () => {
+      const base = document.getElementById("base").value.replace(/\/$/, "");
+      const key = document.getElementById("key").value.trim();
+      const notes = document.getElementById("notes").files[0];
+      const questions = document.getElementById("questions").files[0];
+      if (!key || !notes) { status.textContent = "Add the FreeLLMAPI key and a notes PDF."; return; }
+      status.textContent = "Reading the PDFs...";
+      out.classList.add("hidden");
+      try {
+        const notesText = await pdfText(notes);
+        const qText = questions ? await pdfText(questions) : "";
+        status.textContent = "Asking FreeLLMAPI...";
+        const res = await fetch(base + "/chat/completions", {
+          method: "POST",
+          headers: {"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+          body: JSON.stringify({
+            model: "auto",
+            messages: [
+              {role: "system", content: "Turn student notes into short easy notes. Concept first. Then one check question with four options and the answer. Use the student's wording where it helps. Do not copy long copyrighted passages."},
+              {role: "user", content: "NOTES:\n" + notesText + "\n\nQUESTIONS:\n" + qText}
+            ]
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || JSON.stringify(data).slice(0, 300));
+        out.textContent = data.choices?.[0]?.message?.content || "No text came back.";
+        out.classList.remove("hidden");
+        status.textContent = "Done. The key was not saved on the server.";
+      } catch (err) {
+        status.textContent = "Could not finish: " + err.message + ". FreeLLMAPI must be running, and the page origin must be allowed by its CORS setting.";
+      }
+    };
+  </script>
+</body>
+</html>
