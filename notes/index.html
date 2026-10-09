@@ -13,10 +13,10 @@
     <h1 class="text-3xl font-bold">Upload notes and questions</h1>
     <p class="text-slate-400 text-sm">The page extracts the text in your browser, then asks your FreeLLMAPI for simpler personalised notes. The key stays in this browser.</p>
     <label class="block text-sm">FreeLLMAPI base URL
-      <input id="base" value="http://localhost:3001/v1" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
+      <input id="base" value="https://my-freellmapi-server.onrender.com/v1" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
     </label>
     <label class="block text-sm">FreeLLMAPI key
-      <input id="key" type="password" placeholder="freellmapi-..." class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
+      <input id="key" type="password" value="freellmapi-aee0bcf8947be1ae92447fee0175f33e3277b275372f2931" class="mt-1 w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
     </label>
     <label class="block text-sm">Notes PDF
       <input id="notes" type="file" accept="application/pdf" class="mt-1 w-full text-sm">
@@ -56,19 +56,25 @@
         const notesText = await pdfText(notes);
         const qText = questions ? await pdfText(questions) : "";
         status.textContent = "Asking FreeLLMAPI...";
-        const res = await fetch(base + "/chat/completions", {
-          method: "POST",
-          headers: {"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-          body: JSON.stringify({
-            model: "auto",
-            messages: [
-              {role: "system", content: "Turn student notes into short easy notes. Concept first. Then one check question with four options and the answer. Use the student's wording where it helps. Do not copy long copyrighted passages."},
-              {role: "user", content: "NOTES:\n" + notesText + "\n\nQUESTIONS:\n" + qText}
-            ]
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || JSON.stringify(data).slice(0, 300));
+        const models = ["auto", "gemini-3.8-flash"];
+        let data = null, res = null, last = "";
+        for (const model of models) {
+          res = await fetch(base + "/chat/completions", {
+            method: "POST",
+            headers: {"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+            body: JSON.stringify({
+              model,
+              messages: [
+                {role: "system", content: "Turn student notes into short easy notes. Concept first. Then one check question with four options and the answer. Use the student's wording where it helps. Do not copy long copyrighted passages."},
+                {role: "user", content: "NOTES:\n" + notesText + "\n\nQUESTIONS:\n" + qText}
+              ]
+            })
+          });
+          data = await res.json();
+          if (res.ok && data.choices?.[0]?.message?.content) break;
+          last = data.error?.message || JSON.stringify(data).slice(0, 200);
+        }
+        if (!res.ok) throw new Error(last);
         out.textContent = data.choices?.[0]?.message?.content || "No text came back.";
         out.classList.remove("hidden");
         status.textContent = "Done. The key was not saved on the server.";
