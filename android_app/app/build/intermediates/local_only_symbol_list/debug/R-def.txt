@@ -1,0 +1,8 @@
+R_DEF: Internal format may change without notice
+local
+color brand_card
+color brand_dark
+color brand_primary
+color white
+string app_name
+style Theme.JEEAIR1App

@@ -1,0 +1,25 @@
+{
+  "name": "JEE Advanced AIR-1 Master App",
+  "short_name": "AIR-1 JEE",
+  "description": "Comprehensive JEE Main, Advanced & CBSE 12th Board 95%+ Companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"]
+}
