@@ -1,3 +1,61 @@
+
+function localChemCard(subject, topic) {
+  const t = (topic || '').toLowerCase();
+  if (t.includes('electro') || t.includes('nernst') || t.includes('cell')) {
+    return {
+      title: 'Nernst equation, not a waiting spinner',
+      concept_nugget: 'At 298 K, $E = E^\\circ - \\dfrac{0.059}{n}\\log Q$. Q uses the same form as K, but with the actual concentrations. A tenfold change in Q moves E by $0.059/n$ volt. Trap: n is electrons in the balanced cell reaction, not the stoichiometric coefficient you first see.',
+      key_takeaway: 'As the cell runs, Q rises and E falls. At equilibrium E = 0 and Q = K.',
+      pyq_question: 'Zn|Zn2+(0.01 M)||Cu2+(1 M)|Cu has E° = 1.10 V. What is E at 298 K?',
+      options: ['1.16 V', '1.04 V', '1.10 V', '0.99 V'],
+      correct_option_index: 0,
+      explanation: 'n = 2. Q = [Zn2+]/[Cu2+] = 0.01. E = 1.10 - (0.059/2) log(0.01) = 1.10 - 0.0295(-2) = 1.10 + 0.059 = 1.159 V.'
+    };
+  }
+  return {
+    title: subject + ': ' + topic,
+    concept_nugget: 'Pages cannot run the Python generator, so this card is built on the device. State the defining relation, the condition where it fails, and one JEE trap before you look at a solution.',
+    key_takeaway: 'A card is not finished until you answer the check without the notes.',
+    pyq_question: 'Which condition makes the standard result for ' + topic + ' fail?',
+    options: ['The assumption in the derivation is dropped', 'The formula is memorised', 'The unit is SI', 'The chapter name matches'],
+    correct_option_index: 0,
+    explanation: 'FreeLLM did not return JSON in time. Use this check, then retry. Do not treat this as a past-paper question.'
+  };
+}
+async function generateCardFast(subject, topic) {
+  const local = localChemCard(subject, topic);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch('https://my-freellmapi-server.onrender.com/v1/chat/completions', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: {
+        'Authorization': 'Bearer freellmapi-aee0bcf8947be1ae92447fee0175f33e3277b275372f2931',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'auto',
+        temperature: 0.3,
+        max_tokens: 500,
+        messages: [{role:'user', content:'Return strict JSON only with keys title, concept_nugget, key_takeaway, pyq_question, options, correct_option_index, explanation. Subject: '+subject+'. Topic: '+topic+'. Under 160 words. Not a past-paper claim.'}]
+      })
+    });
+    const text = await res.text();
+    if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) return local;
+    const data = JSON.parse(text);
+    const raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '';
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start < 0 || end < start) return local;
+    const card = JSON.parse(raw.slice(start, end+1));
+    return card.title ? card : local;
+  } catch (e) {
+    return local;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 /**
  * JEE Advanced AIR-1 & CBSE 95%+ Companion Client Application
  * Handles diagnostic tests, SoloLearn micro-learning loop, CBT mock simulator,
@@ -2272,12 +2330,7 @@ async function submitGenCustomCard() {
   btn.disabled = true;
 
   try {
-    const res = await fetch('/api/sololearn/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: jsonFormat({ subject, topic })
-    });
-    const card = await res.json();
+    const card = await generateCardFast(subject, topic);
     closeModal();
     openGenericModal(card.title, `
       <div class="space-y-4">
